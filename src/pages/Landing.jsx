@@ -1,8 +1,10 @@
 
+
 // // src/pages/Landing.jsx
 // import React, { useEffect, useState } from "react";
 // import { Link } from "react-router-dom";
 // import { getAllCourses, getAllEvents } from "../services/AllApi";
+// import Modal from "../components/Modal"; // use existing Modal component
 
 // // Optional lightweight fallback placeholders (used only if API fails)
 // const FALLBACK_COURSES = [
@@ -21,6 +23,10 @@
 //   const [events, setEvents] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [err, setErr] = useState(null);
+
+//   // Apply modal state
+//   const [appliedOpen, setAppliedOpen] = useState(false);
+//   const [appliedCourse, setAppliedCourse] = useState(null);
 
 //   useEffect(() => {
 //     let mounted = true;
@@ -68,11 +74,27 @@
 //     };
 //   }, []);
 
+//   // Auto-close timer ref
+//   useEffect(() => {
+//     let t;
+//     if (appliedOpen) {
+//       t = setTimeout(() => setAppliedOpen(false), 2000);
+//     }
+//     return () => clearTimeout(t);
+//   }, [appliedOpen]);
+
 //   function formatDate(d) {
 //     if (!d) return "";
 //     const dt = new Date(d);
 //     if (isNaN(dt)) return d;
 //     return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+//   }
+
+//   // Called when user clicks Apply
+//   function handleApply(course) {
+//     setAppliedCourse(course);
+//     setAppliedOpen(true);
+//     // In real app, call apply API here if needed
 //   }
 
 //   return (
@@ -90,7 +112,7 @@
 //         </div>
 
 //         <div className="rounded-2xl overflow-hidden shadow-lg">
-//           <img src="https://picsum.photos/seed/campus/900/600" alt="campus" className="w-full h-full object-cover" />
+//           <img src="https://plus.unsplash.com/premium_photo-1684769161409-f6de69d3f274?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8aW5zdGl0dXRlfGVufDB8fDB8fHww" alt="campus" className="w-full h-full object-cover" />
 //         </div>
 //       </section>
 
@@ -109,7 +131,7 @@
 //               <p className="mt-2 text-sm text-slate-600">{c.description ?? c.desc ?? ""}</p>
 //               <div className="mt-3 flex justify-between items-center">
 //                 <Link to="/courses" className="text-indigo-600 text-sm">View all</Link>
-//                 <button className="text-sm px-3 py-1 rounded-md border">Apply</button>
+//                 <button onClick={() => handleApply(c)} className="text-sm px-3 py-1 rounded-md border">Apply</button>
 //               </div>
 //             </div>
 //           ))}
@@ -166,32 +188,28 @@
 //       </section>
 
 //       {err && <div className="mt-6 text-sm text-red-600">{err}</div>}
+
+//       {/* Apply Success Modal */}
+//       <Modal open={appliedOpen} title="Application submitted" onClose={() => setAppliedOpen(false)}>
+//         <div className="py-4">
+//           <p className="text-sm text-slate-700">
+//             {appliedCourse ? `You have successfully applied for "${appliedCourse.title ?? appliedCourse.name}".` : "Applied successfully."}
+//           </p>
+//           <div className="mt-4 text-right">
+//             <button onClick={() => setAppliedOpen(false)} className="px-3 py-2 rounded-md border">Close</button>
+//           </div>
+//         </div>
+//       </Modal>
 //     </main>
 //   );
 // }
 
 
 
-
-
-
-// src/pages/Landing.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllCourses, getAllEvents } from "../services/AllApi";
-import Modal from "../components/Modal"; // use existing Modal component
-
-// Optional lightweight fallback placeholders (used only if API fails)
-const FALLBACK_COURSES = [
-  { _id: "c1", title: "Intro to Web Dev", duration: "6 months", description: "Build modern websites.", imgurl: "https://picsum.photos/seed/course1/800/500" },
-  { _id: "c2", title: "Data Structures", duration: "1 year", description: "Learn algorithms & data structures.", imgurl: "https://picsum.photos/seed/course2/800/500" },
-  { _id: "c3", title: "UI/UX Basics", duration: "3 months", description: "Design beautiful user interfaces.", imgurl: "https://picsum.photos/seed/course3/800/500" },
-];
-
-const FALLBACK_EVENTS = [
-  { _id: "e1", name: "Meet & Greet", date: "2025-12-05", description: "Join the campus community.", img: "https://picsum.photos/seed/event1/900/500" },
-  { _id: "e2", name: "Tech Talk", date: "2025-12-10", description: "Industry experts share insights.", img: "https://picsum.photos/seed/event2/900/500" },
-];
+import Modal from "../components/Modal";
 
 export default function Landing() {
   const [courses, setCourses] = useState([]);
@@ -205,38 +223,47 @@ export default function Landing() {
 
   useEffect(() => {
     let mounted = true;
+
     async function fetchData() {
       setLoading(true);
       setErr(null);
+
       try {
         const [cRes, eRes] = await Promise.allSettled([getAllCourses(), getAllEvents()]);
 
         const fetchedCourses =
-          cRes.status === "fulfilled" ? (Array.isArray(cRes.value?.data) ? cRes.value.data : (Array.isArray(cRes.value) ? cRes.value : [])) : null;
+          cRes.status === "fulfilled"
+            ? Array.isArray(cRes.value?.data)
+              ? cRes.value.data
+              : Array.isArray(cRes.value)
+              ? cRes.value
+              : []
+            : [];
 
         const fetchedEvents =
-          eRes.status === "fulfilled" ? (Array.isArray(eRes.value?.data) ? eRes.value.data : (Array.isArray(eRes.value) ? eRes.value : [])) : null;
+          eRes.status === "fulfilled"
+            ? Array.isArray(eRes.value?.data)
+              ? eRes.value.data
+              : Array.isArray(eRes.value)
+              ? eRes.value
+              : []
+            : [];
 
         if (!mounted) return;
 
-        if (fetchedCourses && fetchedCourses.length > 0) {
-          setCourses(fetchedCourses.slice(0, 3));
-        } else {
-          // fallback
-          setCourses(FALLBACK_COURSES);
-        }
+        setCourses(fetchedCourses.slice(0, 3));
+        setEvents(fetchedEvents.slice(0, 2));
 
-        if (fetchedEvents && fetchedEvents.length > 0) {
-          setEvents(fetchedEvents.slice(0, 2));
-        } else {
-          setEvents(FALLBACK_EVENTS);
+        // If both requests failed, show a helpful message (no dummy data)
+        if ((cRes.status === "rejected" || fetchedCourses.length === 0) && (eRes.status === "rejected" || fetchedEvents.length === 0)) {
+          setErr("Could not load remote content. Please check your network or login if required.");
         }
       } catch (error) {
         console.error("Landing fetch error:", error);
         if (!mounted) return;
-        setErr("Failed to load content. Showing sample data.");
-        setCourses(FALLBACK_COURSES);
-        setEvents(FALLBACK_EVENTS);
+        setErr("Failed to load content. Please check the console for details.");
+        setCourses([]);
+        setEvents([]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -265,11 +292,9 @@ export default function Landing() {
     return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   }
 
-  // Called when user clicks Apply
   function handleApply(course) {
     setAppliedCourse(course);
     setAppliedOpen(true);
-    // In real app, call apply API here if needed
   }
 
   return (
@@ -298,18 +323,22 @@ export default function Landing() {
         </div>
 
         <div className="mt-4 grid md:grid-cols-3 gap-6">
-          {courses.map((c) => (
-            <div key={c._id ?? c.id} className="bg-white rounded-2xl shadow p-4">
-              <img src={c.imgurl ?? c.img ?? `https://picsum.photos/seed/course-${c._id ?? c.id}/800/500`} alt={c.title ?? c.name} className="w-full h-40 object-cover rounded-lg" />
-              <h4 className="mt-3 font-semibold">{c.title ?? c.name}</h4>
-              <p className="text-sm text-slate-600">{c.duration ?? c.time ?? ""}</p>
-              <p className="mt-2 text-sm text-slate-600">{c.description ?? c.desc ?? ""}</p>
-              <div className="mt-3 flex justify-between items-center">
-                <Link to="/courses" className="text-indigo-600 text-sm">View all</Link>
-                <button onClick={() => handleApply(c)} className="text-sm px-3 py-1 rounded-md border">Apply</button>
+          {courses.length === 0 && !loading ? (
+            <div className="col-span-full text-center text-slate-500">No courses available.</div>
+          ) : (
+            courses.map((c) => (
+              <div key={c._id ?? c.id} className="bg-white rounded-2xl shadow p-4">
+                <img src={c.imgurl ?? c.img ?? `https://picsum.photos/seed/course-${c._id ?? c.id}/800/500`} alt={c.title ?? c.name} className="w-full h-40 object-cover rounded-lg" />
+                <h4 className="mt-3 font-semibold">{c.title ?? c.name}</h4>
+                <p className="text-sm text-slate-600">{c.duration ?? c.time ?? ""}</p>
+                <p className="mt-2 text-sm text-slate-600">{c.description ?? c.desc ?? ""}</p>
+                <div className="mt-3 flex justify-between items-center">
+                  <Link to="/courses" className="text-indigo-600 text-sm">View all</Link>
+                  <button onClick={() => handleApply(c)} className="text-sm px-3 py-1 rounded-md border">Apply</button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
@@ -320,22 +349,25 @@ export default function Landing() {
         </div>
 
         <div className="mt-4 grid md:grid-cols-2 gap-6">
-          {events.map((ev) => (
-            <div key={ev._id ?? ev.id} className="relative rounded-xl overflow-hidden bg-white shadow">
-              <img src={ev.img ?? ev.imgurl ?? `https://picsum.photos/seed/event-${ev._id ?? ev.id}/900/500`} alt={ev.name ?? ev.title} className="w-full h-48 object-cover" />
-              <div className="p-4">
-                <h4 className="font-semibold">{ev.name ?? ev.title}</h4>
-                <p className="text-sm text-slate-600">{formatDate(ev.date)} — {ev.description ?? ev.desc ?? ""}</p>
+          {events.length === 0 && !loading ? (
+            <div className="col-span-full text-center text-slate-500">No events available.</div>
+          ) : (
+            events.map((ev) => (
+              <div key={ev._id ?? ev.id} className="relative rounded-xl overflow-hidden bg-white shadow">
+                <img src={ev.img ?? ev.imgurl ?? `https://picsum.photos/seed/event-${ev._id ?? ev.id}/900/500`} alt={ev.name ?? ev.title} className="w-full h-48 object-cover" />
+                <div className="p-4">
+                  <h4 className="font-semibold">{ev.name ?? ev.title}</h4>
+                  <p className="text-sm text-slate-600">{formatDate(ev.date)} — {ev.description ?? ev.desc ?? ""}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
       <section className="mt-12">
         <h3 className="text-2xl font-semibold">Alumni Spotlight</h3>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* If you have alumni API later, swap this with API data. For now keep small placeholders */}
           <div className="bg-white rounded-xl p-4 text-center shadow">
             <img src="https://picsum.photos/seed/alum1/80" className="w-20 h-20 rounded-full mx-auto" alt="alumni" />
             <h5 className="mt-3 font-medium">A. Ramesh</h5>
@@ -364,7 +396,6 @@ export default function Landing() {
 
       {err && <div className="mt-6 text-sm text-red-600">{err}</div>}
 
-      {/* Apply Success Modal */}
       <Modal open={appliedOpen} title="Application submitted" onClose={() => setAppliedOpen(false)}>
         <div className="py-4">
           <p className="text-sm text-slate-700">
