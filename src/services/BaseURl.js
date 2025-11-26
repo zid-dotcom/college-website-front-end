@@ -1,3 +1,4 @@
-const baseurl="https://college-website-backend-a4xq.onrender.com"
+const baseurl="https://college-website-backend-1.onrender.com"
+
 
 export default baseurl
